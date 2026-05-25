@@ -266,18 +266,23 @@ class QdrantRepository(OrchidVectorStoreRepository):
         if meta_must or meta_must_not:
             await self._ensure_inferred_payload_indexes(namespace, metadata_filters)
 
-        qdrant_filter = Filter(
-            must=scope_filter.should if scope_filter else [],
-            must_not=meta_must_not,
-        )
-        if meta_must:
-            qdrant_filter.must.extend(meta_must)  # type: ignore[arg-type]
+        if meta_must or meta_must_not:
+            # When metadata filters are present, ``should`` alone becomes
+            # scoring-only.  Wrap the scope ``should`` clauses inside a
+            # ``must`` group so they stay hard OR filters, ANDed with the
+            # metadata conditions.
+            qdrant_filter = Filter(
+                must=[scope_filter, *meta_must] if scope_filter else meta_must,
+                must_not=meta_must_not,
+            )
+        else:
+            qdrant_filter = scope_filter  # scope ``should`` acts as hard OR filter on its own
 
         results = await self._client.query_points(
             collection_name=namespace,
             query=query_embedding,
             limit=k,
-            filter=qdrant_filter,
+            query_filter=qdrant_filter if qdrant_filter else None,
             with_payload=True,
         )
 
@@ -320,19 +325,20 @@ class QdrantRepository(OrchidVectorStoreRepository):
             else ([], [])
         )
 
-        qdrant_filter = Filter(
-            must=scope_filter.should if scope_filter else [],
-            must_not=meta_must_not,
-        )
-        if meta_must:
-            qdrant_filter.must.extend(meta_must)  # type: ignore[arg-type]
+        if meta_must or meta_must_not:
+            qdrant_filter = Filter(
+                must=[scope_filter, *meta_must] if scope_filter else meta_must,
+                must_not=meta_must_not,
+            )
+        else:
+            qdrant_filter = scope_filter
 
         results = await self._client.query_points(
             collection_name=namespace,
             query=query_sparse,
             using="sparse",
             limit=k,
-            filter=qdrant_filter,
+            query_filter=qdrant_filter if qdrant_filter else None,
             with_payload=True,
         )
 
@@ -365,13 +371,17 @@ class QdrantRepository(OrchidVectorStoreRepository):
         meta_must, _ = build_metadata_filter_clauses(
             {"tool_name": tool_name, "injected_at": {"gte": min_injected_at}}
         )
-        q_filter.must.extend(meta_must)  # type: ignore[arg-type]
+        if meta_must:
+            # Wrap scope inside must alongside metadata so that the scope's
+            # should clauses still act as a hard OR filter (nested Filter
+            # inside must preserves OR semantics for the group).
+            q_filter = Filter(must=[q_filter, *meta_must])
 
         results = await self._client.query_points(
             collection_name=namespace,
             query=None,
             limit=1,
-            filter=q_filter,
+            query_filter=q_filter,
             with_payload=True,
         )
         if results.points:
