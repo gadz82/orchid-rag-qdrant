@@ -516,7 +516,7 @@ class QdrantRepository(OrchidVectorStoreRepository):
                 limit=200,
                 offset=offset,
                 with_payload=True,
-                with_vectors=False,
+                with_vectors=True,
             )
             for point in batch:
                 payload = dict(point.payload or {})
@@ -525,7 +525,7 @@ class QdrantRepository(OrchidVectorStoreRepository):
                     PointStruct(
                         id=point.id,
                         payload=payload,
-                        vector=point.vector or {},
+                        vector=point.vector,
                     )
                 )
             if offset is None:
@@ -549,6 +549,8 @@ class QdrantRepository(OrchidVectorStoreRepository):
     ) -> list[PointStruct]:
         points: list[PointStruct] = []
         for i, doc in enumerate(documents):
+            if not doc.id:
+                logger.debug("[Qdrant] document missing id — falling back to page_content hash")
             point_id = str(uuid.uuid5(_POINT_ID_NAMESPACE, doc.id or doc.page_content))
             payload = dict(doc.metadata)
             payload["doc_id"] = doc.id
