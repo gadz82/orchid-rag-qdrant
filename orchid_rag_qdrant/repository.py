@@ -554,6 +554,7 @@ class QdrantRepository(OrchidVectorStoreRepository):
             point_id = str(uuid.uuid5(_POINT_ID_NAMESPACE, doc.id or doc.page_content))
             payload = dict(doc.metadata)
             payload["doc_id"] = doc.id
+            payload["content"] = doc.page_content
             payload.setdefault("tenant_id", self._default_tenant)
             points.append(
                 PointStruct(
