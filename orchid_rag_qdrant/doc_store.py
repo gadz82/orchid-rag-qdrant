@@ -73,9 +73,7 @@ class QdrantDocStore(OrchidDocStore):
         payload.pop("doc_id", None)
         return str(content), payload
 
-    async def get_many(
-        self, doc_ids: list[str]
-    ) -> dict[str, tuple[str, dict[str, Any]]]:
+    async def get_many(self, doc_ids: list[str]) -> dict[str, tuple[str, dict[str, Any]]]:
         if not doc_ids:
             return {}
         await self._ensure_collection()

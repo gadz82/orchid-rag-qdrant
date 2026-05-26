@@ -35,9 +35,7 @@ logger = logging.getLogger(__name__)
 _POINT_ID_NAMESPACE = uuid.UUID("1f23d4a0-2b6e-44b9-9c5c-c2b7e3c8d1e0")
 
 
-def build_qdrant_filter(
-    scope: OrchidRAGScope, default_tenant: str = "default"
-) -> Filter:
+def build_qdrant_filter(scope: OrchidRAGScope, default_tenant: str = "default") -> Filter:
     """Build a Qdrant ``Filter`` with ``should`` clauses across all visible scope levels.
 
     Mirrors the hierarchical visibility model in :mod:`orchid_ai.rag.scopes`.
@@ -124,14 +122,10 @@ def build_metadata_filter_clauses(
 
         if isinstance(value, dict):
             if "not" in value:
-                must_not.append(
-                    FieldCondition(key=key, match=MatchValue(value=value["not"]))
-                )
+                must_not.append(FieldCondition(key=key, match=MatchValue(value=value["not"])))
                 continue
             if "contains" in value:
-                must.append(
-                    FieldCondition(key=key, match=MatchValue(value=value["contains"]))
-                )
+                must.append(FieldCondition(key=key, match=MatchValue(value=value["contains"])))
                 continue
 
             # Range operators
@@ -143,9 +137,7 @@ def build_metadata_filter_clauses(
                 # ISO-8601 strings → DatetimeRange; everything else → Range
                 first_val = next(iter(range_kwargs.values()))
                 if isinstance(first_val, str):
-                    must.append(
-                        FieldCondition(key=key, range=DatetimeRange(**range_kwargs))
-                    )
+                    must.append(FieldCondition(key=key, range=DatetimeRange(**range_kwargs)))
                 else:
                     must.append(FieldCondition(key=key, range=Range(**range_kwargs)))
                 continue
@@ -254,14 +246,8 @@ class QdrantRepository(OrchidVectorStoreRepository):
 
         query_embedding = await self._embeddings.aembed_query(query)
 
-        scope_filter = (
-            build_qdrant_filter(scope, self._default_tenant) if scope else None
-        )
-        meta_must, meta_must_not = (
-            build_metadata_filter_clauses(metadata_filters)
-            if metadata_filters
-            else ([], [])
-        )
+        scope_filter = build_qdrant_filter(scope, self._default_tenant) if scope else None
+        meta_must, meta_must_not = build_metadata_filter_clauses(metadata_filters) if metadata_filters else ([], [])
 
         if meta_must or meta_must_not:
             await self._ensure_inferred_payload_indexes(namespace, metadata_filters)
@@ -311,19 +297,11 @@ class QdrantRepository(OrchidVectorStoreRepository):
     ) -> list[OrchidSearchResult]:
         """Retrieve via the sparse vector lane (requires a named sparse vector)."""
         if self._sparse_encoder is None:
-            raise NotImplementedError(
-                "QdrantRepository sparse retrieval requires a sparse_encoder."
-            )
+            raise NotImplementedError("QdrantRepository sparse retrieval requires a sparse_encoder.")
         await self._ensure_collection(namespace)
 
-        scope_filter = (
-            build_qdrant_filter(scope, self._default_tenant) if scope else None
-        )
-        meta_must, meta_must_not = (
-            build_metadata_filter_clauses(metadata_filters)
-            if metadata_filters
-            else ([], [])
-        )
+        scope_filter = build_qdrant_filter(scope, self._default_tenant) if scope else None
+        meta_must, meta_must_not = build_metadata_filter_clauses(metadata_filters) if metadata_filters else ([], [])
 
         if meta_must or meta_must_not:
             qdrant_filter = Filter(
@@ -368,9 +346,7 @@ class QdrantRepository(OrchidVectorStoreRepository):
         await self._ensure_collection(namespace)
 
         q_filter = build_qdrant_filter(scope, self._default_tenant)
-        meta_must, _ = build_metadata_filter_clauses(
-            {"tool_name": tool_name, "injected_at": {"gte": min_injected_at}}
-        )
+        meta_must, _ = build_metadata_filter_clauses({"tool_name": tool_name, "injected_at": {"gte": min_injected_at}})
         if meta_must:
             # Wrap scope inside must alongside metadata so that the scope's
             # should clauses still act as a hard OR filter (nested Filter
@@ -401,9 +377,7 @@ class QdrantRepository(OrchidVectorStoreRepository):
         if not documents:
             return
 
-        embeddings = await self._embeddings.aembed_documents(
-            [doc.page_content for doc in documents]
-        )
+        embeddings = await self._embeddings.aembed_documents([doc.page_content for doc in documents])
         points = self._build_points(documents, embeddings)
         await self._client.upsert(collection_name=namespace, points=points)
         logger.info("[Qdrant] indexed %d documents in '%s'", len(documents), namespace)
@@ -418,9 +392,7 @@ class QdrantRepository(OrchidVectorStoreRepository):
         if not documents:
             return
 
-        embeddings = await self._embeddings.aembed_documents(
-            [doc.page_content for doc in documents]
-        )
+        embeddings = await self._embeddings.aembed_documents([doc.page_content for doc in documents])
         points = self._build_points(documents, embeddings)
         await self._client.upsert(collection_name=namespace, points=points)
         logger.info("[Qdrant] upserted %d documents in '%s'", len(documents), namespace)
@@ -434,13 +406,9 @@ class QdrantRepository(OrchidVectorStoreRepository):
         if not document_ids:
             return
         await self._ensure_collection(namespace)
-        point_ids = [
-            str(uuid.uuid5(_POINT_ID_NAMESPACE, doc_id)) for doc_id in document_ids
-        ]
+        point_ids = [str(uuid.uuid5(_POINT_ID_NAMESPACE, doc_id)) for doc_id in document_ids]
         await self._client.delete(collection_name=namespace, points_selector=point_ids)
-        logger.info(
-            "[Qdrant] deleted %d documents from '%s'", len(document_ids), namespace
-        )
+        logger.info("[Qdrant] deleted %d documents from '%s'", len(document_ids), namespace)
 
     # ── OrchidVectorStoreAdmin ──────────────────────────────────────
 

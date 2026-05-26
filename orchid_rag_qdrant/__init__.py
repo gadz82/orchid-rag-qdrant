@@ -51,6 +51,4 @@ def _register() -> None:
         register_doc_store_backend("qdrant", _build_qdrant_doc_store)
         logger.debug("[orchid-rag-qdrant] Registered backends")
     except ImportError:
-        logger.debug(
-            "[orchid-rag-qdrant] Skipping registration (not in this orchid-ai version)"
-        )
+        logger.debug("[orchid-rag-qdrant] Skipping registration (not in this orchid-ai version)")
