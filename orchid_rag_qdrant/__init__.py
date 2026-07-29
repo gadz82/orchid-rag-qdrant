@@ -18,6 +18,7 @@ def _build_qdrant_reader(
     **_settings: object,
 ) -> object:
     from orchid_ai.rag.embeddings import build_embeddings, get_embedding_dimension
+
     from .repository import QdrantRepository
 
     embeddings = build_embeddings(embedding_model)

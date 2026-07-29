@@ -11,9 +11,8 @@ import logging
 import uuid
 from typing import Any
 
-from qdrant_client.models import PointStruct
-
 from orchid_ai.core.doc_store import OrchidDocStore
+from qdrant_client.models import PointStruct
 
 logger = logging.getLogger(__name__)
 

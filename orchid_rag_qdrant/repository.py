@@ -12,6 +12,12 @@ from typing import Any
 
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
+from orchid_ai.core.repository import (
+    OrchidSearchResult,
+    OrchidVectorStoreRepository,
+)
+from orchid_ai.core.scopes import SHARED_TENANT, OrchidRAGScope
+from orchid_ai.core.sparse import OrchidSparseEncoder, OrchidSparseVector
 from qdrant_client.models import (
     DatetimeRange,
     FieldCondition,
@@ -21,13 +27,6 @@ from qdrant_client.models import (
     PointStruct,
     Range,
 )
-
-from orchid_ai.core.repository import (
-    OrchidSearchResult,
-    OrchidVectorStoreRepository,
-)
-from orchid_ai.core.scopes import SHARED_TENANT, OrchidRAGScope
-from orchid_ai.core.sparse import OrchidSparseEncoder, OrchidSparseVector
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +39,8 @@ def build_qdrant_filter(scope: OrchidRAGScope, default_tenant: str = "default") 
 
     Mirrors the hierarchical visibility model in :mod:`orchid_ai.rag.scopes`.
     """
-    from qdrant_client.models import MatchValue as _MV
     from qdrant_client.models import FieldCondition as _FC
+    from qdrant_client.models import MatchValue as _MV
 
     tenant_id = scope.tenant_id or default_tenant
     clauses: list[Filter] = []
