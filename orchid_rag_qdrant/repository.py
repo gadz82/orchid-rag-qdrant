@@ -198,6 +198,7 @@ def _infer_type(value: Any) -> str | None:
     return None
 
 
+# ORCHID-MEM: 01a1a0c1-dc6b-7eaa-a307-d059acb4d643 — Qdrant vector-store adapter with scoped filters
 class QdrantRepository(OrchidVectorStoreRepository):
     """Qdrant-backed vector store with per-tenant isolation.
 
